@@ -1,12 +1,22 @@
 import useAuth from '../../../hooks/useAuth'
+import useUserAxios from '../../../hooks/useUserAxios'
 
 const Google = () => {
   const { sineGoogle } = useAuth()
+  const axiosInstance = useUserAxios()
 
   const handdleGoogleSinein = () => {
     sineGoogle()
-      .then((result) => {
-        console.log(result.user)
+      .then(async (result) => {
+        //uudate userInfo in the database
+        const userInfo = {
+          email: result.user.email,
+          role: 'user', //default role
+          created_at: new Date().toISOString(),
+          last_log_in: new Date().toISOString(),
+        }
+        const userRes = await axiosInstance.post('/users', userInfo)
+        console.log(userRes.data)
       })
       .catch((error) => {
         console.log(error)

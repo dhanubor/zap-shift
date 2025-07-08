@@ -6,11 +6,14 @@ import Login from '../pages/Auth/Login'
 import Register from '../pages/Auth/Register'
 import Coverrage from '../pages/Map/Coverrage'
 import PrivateRoutes from './PrivateRoutes'
-// import SendPersel from '../pages/sendPersel/sendPersel'
 import DashbordLayout from '../layout/DashbordLayout'
 import Mypersel from '../pages/dashbord/Mypersel'
 import Payment from '../pages/dashbord/pament/Payment'
 import SendParcel from '../pages/sendPersel/SendPersel'
+import PaymentHistory from '../pages/dashbord/paymentHistory/PaymentHistory'
+import BeARider from '../pages/BeARider/BeARider'
+import PendingRiders from '../pages/dashbord/Pending Riders/PendingRiders'
+import ActiveRiders from '../pages/dashbord/Active Riders/ActiveRiders'
 
 export const router = createBrowserRouter([
   {
@@ -31,6 +34,15 @@ export const router = createBrowserRouter([
         element: (
           <PrivateRoutes>
             <SendParcel />
+          </PrivateRoutes>
+        ),
+        loader: () => fetch('./warehouses.json'),
+      },
+      {
+        path: '//beARider',
+        element: (
+          <PrivateRoutes>
+            <BeARider />
           </PrivateRoutes>
         ),
         loader: () => fetch('./warehouses.json'),
@@ -66,6 +78,18 @@ export const router = createBrowserRouter([
       {
         path: 'payment/:perselId',
         Component: Payment,
+      },
+      {
+        path: 'paymentHistory',
+        Component: PaymentHistory,
+      },
+      {
+        path: 'pending-riders',
+        Component: PendingRiders,
+      },
+      {
+        path: 'active-riders',
+        Component: ActiveRiders,
       },
     ],
   },

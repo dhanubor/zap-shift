@@ -95,13 +95,15 @@ const Mypersel = () => {
                   >
                     View
                   </Link>
-                  {parcel.payment_status === 'unpaid' && (
+                  {parcel.payment_status === 'unpaid' ? (
                     <button
                       onClick={() => onPay(parcel._id)}
                       className='btn btn-sm btn-warning'
                     >
                       Pay
                     </button>
+                  ) : (
+                    <button className='btn btn-sm btn-disabled'>Paid</button>
                   )}
                   <button
                     onClick={() => handleDelete(parcel._id)}

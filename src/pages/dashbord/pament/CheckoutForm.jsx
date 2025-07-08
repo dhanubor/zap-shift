@@ -1,14 +1,18 @@
 import React, { useState } from 'react'
 import { CardElement, useStripe, useElements } from '@stripe/react-stripe-js'
-import { useParams } from 'react-router'
+import { useNavigate, useParams } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import useAxious from '../../../hooks/useAxious'
+import useAuth from './../../../hooks/useAuth'
+import Swal from 'sweetalert2'
 
 const CheckoutForm = () => {
+  const { user } = useAuth()
   const { perselId } = useParams()
   const stripe = useStripe()
   const elements = useElements()
   const axiosSecoure = useAxious()
+  const navigate = useNavigate()
 
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
@@ -42,22 +46,26 @@ const CheckoutForm = () => {
     const amount = parcelInfo.cost
     const amountInCents = amount * 100
 
-    // ✅ Step 1: Backend থেকে clientSecret আনা
+    // ✅ Step 1: Create Payment Intent from backend
     const intentRes = await axiosSecoure.post('/create-payment-intent', {
-      amountInCents: amountInCents,
-      parcelInfo, // আপনি চাইলে ব্যাকএন্ডে অর্ডার ডেটাও পাঠাতে পারেন
+      amountInCents,
     })
 
     const clientSecret = intentRes.data.clientSecret
-    console.log('Client Secret:', intentRes.data.clientSecret)
+    if (!clientSecret) {
+      setError('Client secret not received')
+      setProcessing(false)
+      return
+    }
 
-    // ✅ Step 2: Stripe থেকে confirm করা
+    // ✅ Step 2: Confirm Card Payment using Stripe
     const { paymentIntent, error: confirmError } =
       await stripe.confirmCardPayment(clientSecret, {
         payment_method: {
           card: card,
           billing_details: {
-            name: 'Dhanu Bor Mondal', // চাইলে ইউজার নাম দিন
+            name: user?.displayName || 'Unknown User',
+            email: user?.email || 'no-email@example.com',
           },
         },
       })
@@ -65,13 +73,41 @@ const CheckoutForm = () => {
     if (confirmError) {
       setError(confirmError.message)
       setProcessing(false)
-    } else if (paymentIntent.status === 'succeeded') {
-      // ✅ Payment Success হলে আপনি চাইলে Backend এ অর্ডার আপডেট পাঠাতে পারেন
-      // await axiosSecoure.post('/update-payment', { paymentIntent, perselId })
+      return
+    }
 
-      setSuccess(true)
-      setError('')
-      setProcessing(false)
+    if (paymentIntent.status === 'succeeded') {
+      // ✅ Step 3: Save payment info to backend
+      const paymentData = {
+        parcelId: parcelInfo._id, // ✅ Correct key name
+        userEmail: user.email,
+        amount,
+        transactionId: paymentIntent.id,
+      }
+
+      const paymentRes = await axiosSecoure.post('/payments', paymentData)
+
+      if (paymentRes.data?.parcelUpdate?.modifiedCount > 0) {
+        setSuccess(true)
+        setError('')
+        setProcessing(false)
+
+        // ✅ Step 4: SweetAlert2 Success message
+        Swal.fire({
+          title: '🎉 Payment Successful!',
+          html: `
+          <p>Thank you! Your payment has been successfully processed.</p>
+          <p><strong>Transaction ID:</strong> <code>${paymentIntent.id}</code></p>
+        `,
+          icon: 'success',
+          confirmButtonText: 'Go to My Parcels',
+        }).then(() => {
+          navigate('/dashbord') // ✅ Correct route
+        })
+      } else {
+        setError('Payment succeeded but failed to update parcel status.')
+        setProcessing(false)
+      }
     }
   }
 

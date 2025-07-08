@@ -50,6 +50,9 @@ const Navbar = () => {
           <li>
             <NavLink to='/dashbord'>Dashbord</NavLink>
           </li>
+          <li>
+            <NavLink to='/beARider'>BeARider</NavLink>
+          </li>
         </>
       )}
     </>
